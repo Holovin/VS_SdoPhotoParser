@@ -5,11 +5,11 @@ from database import Database
 from message import Msg
 from download import Download
 from config import Config
-from datetime import datetime
+from time import sleep
 
 
 def main():
-    logging.basicConfig(format=u'%(levelname)-8s [%(asctime)s] %(message)s', level=logging.DEBUG)
+    logging.basicConfig(format=u'%(levelname)-8s [%(asctime)s] %(message)s', level=logging.INFO)
 
     db = Database()
     pos = db.get_position()
@@ -30,6 +30,7 @@ def main():
             else:
                 logging.info("Wrong user id, skipped...")
             db.update_position(d.next())
+            sleep(0.3)
         else:
             logging.fatal("Some fatal error, exit...")
             break
