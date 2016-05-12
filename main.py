@@ -1,30 +1,40 @@
 #!/usr/bin/python
-import requests
+
+import logging
 from database import Database
-from error import Error
-from donwload import Download
+from message import Msg
+from download import Download
 from config import Config
 from datetime import datetime
 
+
 def main():
+    logging.basicConfig(format=u'%(levelname)-8s [%(asctime)s] %(message)s', level=logging.DEBUG)
+
     db = Database()
-    d = Download(db.get_position())
+    pos = db.get_position()
+    d = Download(pos)
     if not d.auth(Config.USER_NAME, Config.USER_PASS):
-        print("[NO ACCESS TO SDO!] Seems like wrong password.")
+        logging.fatal("No access to SDO, exit...")
         exit(0)
 
-    # сделать старт цикла
-    res = d.load_user()
+    logging.info("Starting from: " + str(pos))
+    while True:
+        res = d.load_user()
 
-    if res is not Error.critical_http and res is not Error.critical_parse:
-        if res is not Error.err_not_found:
-            user = d.pop_user()
-            print(str(datetime.now().time()) + " User: " + user.first_name + " " + user.last_name + " is added;")
-            db.insert_user(user)
-        db.update_position(d.next())
-    else:
-        print(str(datetime.now().time()) + " some error... Stopped.")
-    # сделать конец цикла
+        if res is not Msg.critical_http and res is not Msg.critical_parse:
+            if res is not Msg.err_not_found:
+                user = d.pop_user()
+                logging.info("User " + user.first_name + " " + user.last_name + " added")
+                db.insert_user(user)
+            else:
+                logging.info("Wrong user id, skipped...")
+            db.update_position(d.next())
+        else:
+            logging.fatal("Some fatal error, exit...")
+            break
+
+    logging.info("--- APP END ---")
 
 
 if __name__ == "__main__":

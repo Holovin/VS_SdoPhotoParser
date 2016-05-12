@@ -1,9 +1,11 @@
 #!/usr/bin/python
 
+import logging
 from pymongo import MongoClient
 from gridfs import GridFS
-from user import User
 from object import Object
+from config import Config
+
 
 class Database:
     client = None
@@ -17,14 +19,18 @@ class Database:
 
     def __init__(self):
         try:
-            keys = {"serverSelectionTimeoutMS": 4000}
-            self.client = MongoClient('127.0.0.1', 27017)
+            keys = {'serverSelectionTimeoutMS': 4000}
+            self.client = MongoClient(Config.DB_HOST, Config.DB_PORT)
             self.client.database_names()
-            self.db = self.client['sdo_photos']
+            self.db = self.client[Config.DB_NAME]
+            logging.info("Connected to mongo... ok")
+
             self.fs = GridFS(self.db)
+            logging.info("GridFS link... ok")
+
             self.isOperable = True
-        except:
-            print("Cannot connect to MongoDB.")
+        except Exception as e:
+            logging.fatal("Connection to mongo failed (" + str(e) + ")")
             self.isOperable = False
         return
 
@@ -43,6 +49,7 @@ class Database:
 
     def insert_user(self, user):
         if not self.isOperable:
+            logging.error("Trying insert user in non-valid db!")
             return False
 
         photo_id = None
@@ -58,6 +65,5 @@ class Database:
 
         insert_id = self.db['users'].insert_one(o.__dict__).inserted_id
 
-        print(">>>         >>> Inserted with key: " + str(insert_id))
-
+        logging.info("User [" + str(o.sdo_id) + "] inserted with key: " + str(insert_id))
         return True
